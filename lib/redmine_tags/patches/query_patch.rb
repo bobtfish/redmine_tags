@@ -47,8 +47,21 @@ module RedmineTags
             filters.merge!( 'tags' => filter )
 
             values    = values_for('tags').clone
-            compare   = operator_for('tags').eql?('=') ? 'IN' : 'NOT IN'
-            ids_list  = Issue.tagged_with(values).collect{ |issue| issue.id }.push(0).join(',')
+            if operator_for('tags').eql?('w') # [ 'is (and)', 'w' ]
+              compare   = 'IN'
+              issues = Issue.tagged_with(values, :match_all => true)
+            elsif operator_for('tags').eql?('x') # [ 'is (or)', 'x' ]
+              compare = 'IN'
+              issues = Issue.tagged_with(values, :any => true)
+            elsif operator_for('tags').eql?('y') # [ 'is not (and)', 'y']
+              compare = 'NOT IN'
+              issues = Issue.tagged_with(values, :match_all => true)
+            elsif operator_for('tags').eql?('z') # ['is not (or)', 'z']
+              compare = 'NOT IN'
+              issues = Issue.tagged_with(values, :any => true)
+            end
+
+            ids_list  = issues.collect{ |issue| issue.id }.push(0).join(',')
 
             clauses << " AND ( #{Issue.table_name}.id #{compare} (#{ids_list}) ) "
           end
@@ -58,9 +71,9 @@ module RedmineTags
 
 
         def available_filters_extended
-          unless @available_filters 
+          unless @available_filters
             available_filters_original.merge!({ 'tags' => {
-              :type   => :list,
+              :type   => :tags,
               :order  => 6,
               :values => Issue.available_tags(:project => project).collect{ |t| [t.name, t.name] }
             }})

@@ -27,6 +27,8 @@ module RedmineTags
         base.class_eval do
           alias_method :column_content_original, :column_content
           alias_method :column_content, :column_content_extended
+          alias_method :operators_for_select_original, :operators_for_select
+          alias_method :operators_for_select, :operators_for_select_extended
         end
       end
 
@@ -40,6 +42,19 @@ module RedmineTags
             column.value(issue).collect{ |t| render_tag_link(t) }.join(', ')
           else
             column_content_original(column, issue)
+          end
+        end
+
+        def operators_for_select_extended(filter_type)
+          if filter_type.eql? :tags
+            [
+                [ 'is (or)',     'x' ],
+                [ 'is (and)',    'w' ],
+                [ 'is not (and)', 'y' ],
+                [ 'is not (or)', 'z' ],
+            ]
+          else
+            operators_for_select_original(filter_type)
           end
         end
       end

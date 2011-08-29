@@ -1,0 +1,36 @@
+<!-- Horrible hack. As we use non-standard types, ergo our value list doesn't
+     get generated - this is hard coded in redmin app/views/queries/_filters.rhtml :(
+     Ergo generate the list inside another div here, and use some prototype.js
+     to swap it into place so that the tags drop down actually appears.
+     There could be fixed upstream by one of:
+        . A template hook to allow plugins to hook values tags injection (still yuk,
+          as we have to still generate the select ourselves manually?)
+        . The when clause for types in the template should become a method in a helper that
+          is used for how to get the data for how to draw the values selection for this
+          type. This should allow plugins to override this method, adding
+          how it'd like it's values displayed to the standard ones..
+-->
+<div id="div_values_tags_inject" style="display:none;">
+        <select <%= "multiple=true" if query.values_for('tags') and query.values_for('tags').length > 1 %> name="v[tags][]", id="values_tags" class="select-small" style="vertical-align: top;">
+        <%=
+            options_for_select(
+                Issue.available_tags(
+                  :project => project,
+                  :open_only => (redmine_tags_settings[:issues_open_only].to_i == 1)
+                ).collect { |field| [field[:name], field[:name] ] },
+                query.values_for('tags')
+             )
+        %>
+        </select>
+        <%= if !(query.values_for('tags') and query.values_for('tags').length > 1)
+              link_to_function image_tag('bullet_toggle_plus.png'), "toggle_multi_select('tags');", :style => "vertical-align: bottom;"
+            else
+              ''
+            end
+        %>
+</div>
+<script type="text/javascript">
+//<![CDATA[
+    $('div_values_tags').replace($('div_values_tags_inject').innerHTML);
+//]]>
+</script>
