@@ -50,7 +50,8 @@ module RedmineTags
             if operator_for('tags').eql?('w') # [ 'is (and)', 'w' ]
               compare   = 'IN'
               issues = Issue.tagged_with(values, :match_all => true)
-            elsif operator_for('tags').eql?('x') # [ 'is (or)', 'x' ]
+            # [ 'is (or)', 'x' ] also = (from clicking on one tag link)
+            elsif operator_for('tags').eql?('x') or operator_for('tags').eql?('=')# [ 'is (or)', 'x' ]
               compare = 'IN'
               issues = Issue.tagged_with(values, :any => true)
             elsif operator_for('tags').eql?('y') # [ 'is not (and)', 'y']
@@ -61,9 +62,10 @@ module RedmineTags
               issues = Issue.tagged_with(values, :any => true)
             end
 
-            ids_list  = issues.collect{ |issue| issue.id }.push(0).join(',')
-
-            clauses << " AND ( #{Issue.table_name}.id #{compare} (#{ids_list}) ) "
+            if (issues != nil) # Avoid 500 if we're sent mad filters
+              ids_list = issues.collect{ |issue| issue.id }.push(0).join(',')
+              clauses << " AND ( #{Issue.table_name}.id #{compare} (#{ids_list}) ) "
+            end
           end
 
           clauses
